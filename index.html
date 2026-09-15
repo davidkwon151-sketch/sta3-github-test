@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tiny Tetris</title>
+<style>
+  body{margin:0;height:100vh;display:grid;place-items:center;background:#111;color:white;font:16px system-ui}
+  main{display:flex;gap:18px;align-items:start}
+  canvas{background:#000;border:2px solid #555}
+  button{padding:8px 12px}
+</style>
+<main>
+  <canvas id="c" width="200" height="400"></canvas>
+  <section>
+    <h1>Tetris</h1>
+    <p>Score: <b id="s">0</b></p>
+    <p>← → 이동<br>↑ 회전<br>↓ 내리기</p>
+    <button onclick="location.reload()">Restart</button>
+  </section>
+</main>
+<script>
+const canvas=document.getElementById("c"),ctx=canvas.getContext("2d"),scoreEl=document.getElementById("s");
+const W=10,H=20,S=20,colors=[,"#00e5ff","#2458ff","#ff9f1c","#ffe066","#7cff6b","#b967ff","#ff4d6d"];
+const shapes=[[[1,1,1,1]],[[2,0,0],[2,2,2]],[[0,0,3],[3,3,3]],[[4,4],[4,4]],[[0,5,5],[5,5,0]],[[0,6,0],[6,6,6]],[[7,7,0],[0,7,7]]];
+let board=Array.from({length:H},()=>Array(W).fill(0)),score=0,gameOver=false;
+let piece=newPiece();
+function newPiece(){let id=Math.floor(Math.random()*shapes.length)+1;return{x:3,y:0,id,m:shapes[id-1].map(r=>r.slice())}}
+function hit(p,dx=0,dy=0,m=p.m){return m.some((r,y)=>r.some((v,x)=>v&&(p.x+x+dx<0||p.x+x+dx>=W||p.y+y+dy>=H||board[p.y+y+dy]?.[p.x+x+dx])))}
+function drawCell(x,y,v){ctx.fillStyle=colors[v];ctx.fillRect(x*S,y*S,S-1,S-1)}
+function draw(){ctx.clearRect(0,0,200,400);board.forEach((r,y)=>r.forEach((v,x)=>v&&drawCell(x,y,v)));piece.m.forEach((r,y)=>r.forEach((v,x)=>v&&drawCell(piece.x+x,piece.y+y,piece.id)))}
+function lock(){piece.m.forEach((r,y)=>r.forEach((v,x)=>v&&(board[piece.y+y][piece.x+x]=piece.id)));clearLines();piece=newPiece();if(hit(piece))gameOver=true}
+function clearLines(){let kept=board.filter(r=>r.some(v=>!v)),gone=H-kept.length;board=[...Array.from({length:gone},()=>Array(W).fill(0)),...kept];score+=gone*100;scoreEl.textContent=score}
+function drop(){if(gameOver)return alert("Game over! Score: "+score);hit(piece,0,1)?lock():piece.y++;draw()}
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"&&!hit(piece,-1))piece.x--;
+  if(e.key==="ArrowRight"&&!hit(piece,1))piece.x++;
+  if(e.key==="ArrowDown")drop();
+  if(e.key==="ArrowUp"){let m=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());if(!hit(piece,0,0,m))piece.m=m}
+  draw();
+});
+draw();setInterval(drop,500);
+</script>
+</html>
